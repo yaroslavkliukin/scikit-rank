@@ -1,0 +1,110 @@
+{
+    "protocol": {
+        "seed": 2021,
+        "selection_split": "eval, with the documented exploratory MIND exception",
+        "test_policy": "Avazu used final-only test evaluation; the MIND BPR result is exploratory",
+        "avazu_metric": "AUC",
+        "mind_metrics": [
+            "NDCG@5",
+            "NDCG@10",
+            "MRR"
+        ],
+        "notes": [
+            "Temporal results use one seed, as agreed for this protocol.",
+            "MIND metrics are macro-averaged over impression_id groups.",
+            "Avazu is evaluated as row-level binary CTR and is not grouped by device_id.",
+            "The MIND BPR-plus-entity configuration was promoted after test inspection and is not a strict validation-only estimate."
+        ]
+    },
+    "avazu_time": [
+        {
+            "model": "Scikit-Rank DCNv2",
+            "auc": 0.7460844938591402,
+            "log_loss": 0.3978697657585144
+        },
+        {
+            "model": "CatBoost",
+            "auc": 0.7456932758928955,
+            "log_loss": 0.39799035666172233
+        },
+        {
+            "model": "FuxiCTR DCNv2",
+            "auc": 0.7454738411293858,
+            "log_loss": 0.3979338959064981
+        },
+        {
+            "model": "LightGBM",
+            "auc": 0.7414006145036559,
+            "log_loss": 0.39915846689107504
+        },
+        {
+            "model": "XGBoost (frequency encoded)",
+            "auc": 0.7298805780697626,
+            "log_loss": 0.4059210910613311
+        }
+    ],
+    "mind_small": [
+        {
+            "model": "Scikit-Rank DCNv2 (BPR + external entity embeddings)",
+            "ndcg_at_5": 0.2852888550171581,
+            "ndcg_at_10": 0.342281695297055,
+            "mrr": 0.30043734656391446
+        },
+        {
+            "model": "FuxiCTR DCNv2",
+            "ndcg_at_5": 0.2771655712497957,
+            "ndcg_at_10": 0.3362136850206392,
+            "mrr": 0.296181500829739
+        },
+        {
+            "model": "LightGBM",
+            "ndcg_at_5": 0.26165885791842436,
+            "ndcg_at_10": 0.32184576010944715,
+            "mrr": 0.2752008893578028
+        },
+        {
+            "model": "XGBoost",
+            "ndcg_at_5": 0.2461964411451232,
+            "ndcg_at_10": 0.31127330212634485,
+            "mrr": 0.2608665502620396
+        },
+        {
+            "model": "CatBoost",
+            "ndcg_at_5": 0.23515677962387224,
+            "ndcg_at_10": 0.29768381282092643,
+            "mrr": 0.2511220196175825
+        }
+    ],
+    "mind_ablation": [
+        {
+            "configuration": "BPR + external entity embeddings (tower width 64)",
+            "ndcg_at_5": 0.2852888550171581,
+            "ndcg_at_10": 0.342281695297055,
+            "mrr": 0.30043734656391446
+        },
+        {
+            "configuration": "BPR without external embeddings",
+            "ndcg_at_5": 0.2794354243558426,
+            "ndcg_at_10": 0.33956105397851033,
+            "mrr": 0.29341721468714066
+        },
+        {
+            "configuration": "Listwise + external entity embeddings (tower width 128)",
+            "ndcg_at_5": 0.27556514557173245,
+            "ndcg_at_10": 0.33650997412291334,
+            "mrr": 0.28746093647956256
+        },
+        {
+            "configuration": "BCE without external embeddings",
+            "ndcg_at_5": 0.2707407076626285,
+            "ndcg_at_10": 0.334539799681843,
+            "mrr": 0.28635701156069043
+        },
+        {
+            "configuration": "Listwise without external embeddings",
+            "ndcg_at_5": 0.2723985731359922,
+            "ndcg_at_10": 0.33324633212168026,
+            "mrr": 0.2855078736627669
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+#   uv run python exps/bars/train.py \
+#       --config exps/bars/configs/config_dcn_criteo_x1.yaml
+model: dcn
+dataset: criteo_x1
+num_features: [I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, I13]
+cat_features: [C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15, C16, C17, C18, C19, C20, C21, C22, C23, C24, C25, C26]
+data_dir: data/Criteo_x1
+max_train_rows: null
+verbose: false
+deterministic: true
+
+model_params:
+  random_state: 2021
+  structure: parallel
+  activation: relu
+  loss: bce
+  hidden_units: [500, 500, 500]
+  cross_layers: 3
+  embedding_dim: 10
+  dropout: 0.1
+  num_encoder: "linear:embedding_dim=10"
+  normalize_numeric: false
+  numeric_nan_fill: zero
+  lr: 1.0e-3
+  weight_decay: 0.0
+  embedding_regularizer: 1.0e-5
+  grad_clip_norm: 10
+  lr_scheduler: "plateau:patience=0;factor=0.1;min_lr=1e-6"
+  epochs: 100
+  batch_size: 4096
+  early_stopping_rounds: 2
+  eval_metric: auc
+  chunk_rows: 50000000

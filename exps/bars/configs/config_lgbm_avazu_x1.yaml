@@ -1,0 +1,30 @@
+#   uv run --group lgbm python exps/bars/train.py \
+#       --config exps/bars/configs/config_lgbm_avazu_x1.yaml
+model: lgbm
+dataset: avazu_x1
+num_features: []
+cat_features: [feat_1, feat_2, feat_3, feat_4, feat_5, feat_6, feat_7, feat_8, feat_9, feat_10, feat_11, feat_12, feat_13, feat_14, feat_15, feat_16, feat_17, feat_18, feat_19, feat_20, feat_21, feat_22]
+data_dir: data/Avazu_x1
+max_train_rows: null
+verbose: false
+
+model_params:
+  random_state: 2021
+  objective: binary
+  verbosity: -1
+  n_estimators: 10000
+  eval_metric: [auc, binary_logloss]
+  early_stopping_rounds: 200
+  learning_rate: 0.03
+  num_leaves: 63
+  min_child_samples: 10000
+  colsample_bytree: 0.7
+  subsample: 1.0
+  subsample_freq: 1
+  reg_lambda: 5.0
+  reg_alpha: 1.0
+  cat_smooth: 100.0
+  cat_l2: 50.0
+  max_cat_threshold: 32
+  max_bin: 255
+  n_jobs: -1

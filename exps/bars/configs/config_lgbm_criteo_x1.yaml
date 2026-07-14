@@ -1,0 +1,30 @@
+#   uv run --group lgbm python exps/bars/train.py \
+#       --config exps/bars/configs/config_lgbm_criteo_x1.yaml
+model: lgbm
+dataset: criteo_x1
+num_features: [I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, I13]
+cat_features: [C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15, C16, C17, C18, C19, C20, C21, C22, C23, C24, C25, C26]
+data_dir: data/Criteo_x1
+max_train_rows: null
+verbose: false
+
+model_params:
+  random_state: 2021
+  objective: binary
+  verbosity: -1
+  n_estimators: 10000
+  eval_metric: [auc, binary_logloss]
+  early_stopping_rounds: 200
+  learning_rate: 0.01
+  num_leaves: 511
+  min_child_samples: 5000
+  colsample_bytree: 0.5
+  subsample: 1.0
+  subsample_freq: 1
+  reg_lambda: 5.0
+  reg_alpha: 10.0
+  cat_smooth: 10.0
+  cat_l2: 10.0
+  max_cat_threshold: 32
+  max_bin: 2047
+  n_jobs: -1

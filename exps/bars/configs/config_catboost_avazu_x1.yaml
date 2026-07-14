@@ -1,0 +1,31 @@
+#   uv run --group catboost python exps/bars/train.py \
+#       --config exps/bars/configs/config_catboost_avazu_x1.yaml
+model: catboost
+dataset: avazu_x1
+num_features: []
+cat_features: [feat_1, feat_2, feat_3, feat_4, feat_5, feat_6, feat_7, feat_8, feat_9, feat_10, feat_11, feat_12, feat_13, feat_14, feat_15, feat_16, feat_17, feat_18, feat_19, feat_20, feat_21, feat_22]
+data_dir: data/Avazu_x1
+max_train_rows: null
+verbose: false
+
+model_params:
+  task_type: CPU
+  use_best_model: true
+  allow_writing_files: false
+  random_seed: 2021
+  loss_function: Logloss
+  eval_metric: AUC
+  early_stopping_rounds: 200
+  iterations: 1000
+  learning_rate: 0.4
+  depth: 6
+  l2_leaf_reg: 4
+  random_strength: 1.0
+  model_size_reg: 0.0
+  bootstrap_type: MVS
+  subsample: 0.6
+  rsm: 1.0
+  mvs_reg: 0.0
+  max_ctr_complexity: 4
+  one_hot_max_size: 2
+  thread_count: -1

@@ -1,0 +1,32 @@
+#   uv run python exps/bars/train.py \
+#       --config exps/bars/configs/config_dcn_avazu_x1.yaml
+model: dcn
+dataset: avazu_x1
+num_features: []
+cat_features: [feat_1, feat_2, feat_3, feat_4, feat_5, feat_6, feat_7, feat_8, feat_9, feat_10, feat_11, feat_12, feat_13, feat_14, feat_15, feat_16, feat_17, feat_18, feat_19, feat_20, feat_21, feat_22]
+data_dir: data/Avazu_x1
+max_train_rows: null
+verbose: false
+deterministic: true
+
+model_params:
+  random_state: 2021
+  structure: parallel
+  activation: relu
+  batch_norm: true
+  loss: bce
+  hidden_units: [400, 400, 400]
+  cross_layers: 5
+  embedding_dim: 10
+  dropout: 0.2
+  cat_encoder: per_feature
+  lr: 1.0e-3
+  weight_decay: 0.0
+  embedding_regularizer: 0.05
+  grad_clip_norm: 10
+  lr_scheduler: "plateau:patience=0;factor=0.1;min_lr=1e-6"
+  epochs: 100
+  batch_size: 4096
+  early_stopping_rounds: 2
+  eval_metric: auc
+  chunk_rows: 50000000

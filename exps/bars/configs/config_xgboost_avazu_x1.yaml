@@ -1,0 +1,32 @@
+#   uv run --group xgboost python exps/bars/train.py \
+#       --config exps/bars/configs/config_xgboost_avazu_x1.yaml
+model: xgboost
+dataset: avazu_x1
+num_features: []
+cat_features: [feat_1, feat_2, feat_3, feat_4, feat_5, feat_6, feat_7, feat_8, feat_9, feat_10, feat_11, feat_12, feat_13, feat_14, feat_15, feat_16, feat_17, feat_18, feat_19, feat_20, feat_21, feat_22]
+data_dir: data/Avazu_x1
+max_train_rows: null
+verbose: false
+
+model_params:
+  device: cuda
+  tree_method: hist
+  enable_categorical: true
+  random_state: 2021
+  objective: binary:logistic
+  eval_metric: [logloss, auc]
+  n_estimators: 10000
+  early_stopping_rounds: 200
+  learning_rate: 0.05
+  max_depth: 4
+  min_child_weight: 300
+  subsample: 0.9
+  colsample_bytree: 0.7
+  sampling_method: gradient_based
+  reg_lambda: 1.0
+  reg_alpha: 0.0
+  gamma: 0
+  grow_policy: depthwise
+  max_cat_to_onehot: 16
+  max_cat_threshold: 16
+  n_jobs: -1
