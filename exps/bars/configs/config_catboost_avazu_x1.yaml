@@ -1,5 +1,4 @@
-#   uv run --group catboost python exps/bars/train.py \
-#       --config exps/bars/configs/config_catboost_avazu_x1.yaml
+---
 model: catboost
 dataset: avazu_x1
 num_features: []

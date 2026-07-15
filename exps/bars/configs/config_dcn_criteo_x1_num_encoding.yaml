@@ -1,5 +1,4 @@
-#   uv run python exps/bars/train.py \
-#       --config exps/bars/configs/config_dcn_criteo_x1_num_encoding.yaml
+---
 model: dcn
 dataset: criteo_x1
 num_features: [I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, I13]

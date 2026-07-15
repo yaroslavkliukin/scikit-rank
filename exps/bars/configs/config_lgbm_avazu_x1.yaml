@@ -1,5 +1,4 @@
-#   uv run --group lgbm python exps/bars/train.py \
-#       --config exps/bars/configs/config_lgbm_avazu_x1.yaml
+---
 model: lgbm
 dataset: avazu_x1
 num_features: []

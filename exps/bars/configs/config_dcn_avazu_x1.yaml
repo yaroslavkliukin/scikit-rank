@@ -1,5 +1,4 @@
-#   uv run python exps/bars/train.py \
-#       --config exps/bars/configs/config_dcn_avazu_x1.yaml
+---
 model: dcn
 dataset: avazu_x1
 num_features: []

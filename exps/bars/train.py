@@ -10,10 +10,8 @@ that owns its whole pipeline. Helpers live in ``_data.py`` / ``_adapters.py`` / 
 
 Example:
 -------
-    uv run --group lgbm python exps/bars/train.py \
-        --config exps/bars/configs/config_lgbm_criteo_x1.yaml
     uv run python exps/bars/train.py \
-        --config exps/bars/configs/config_dcn_criteo_x1.yaml     # DCN: full env
+        --config exps/bars/configs/config_dcn_criteo_x1.yaml
 
 """
 

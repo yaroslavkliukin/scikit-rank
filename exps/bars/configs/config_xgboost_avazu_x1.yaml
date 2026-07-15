@@ -1,5 +1,4 @@
-#   uv run --group xgboost python exps/bars/train.py \
-#       --config exps/bars/configs/config_xgboost_avazu_x1.yaml
+---
 model: xgboost
 dataset: avazu_x1
 num_features: []
