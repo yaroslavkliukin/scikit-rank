@@ -66,6 +66,146 @@ shared hashed embedding for two high-cardinality columns) applies only to avazu.
 
 Seeds (5): `2021`, `27011`, `190034`, `948432`, `992817`.
 
+## Hyperparameter selection
+
+Hyperparameters were selected independently for `criteo_x1` and `avazu_x1` using a
+stagewise block-coordinate grid search. At each stage, an exhaustive Cartesian grid
+was evaluated for a group of related parameters, while the validation-AUC winner
+from every preceding stage was held fixed. Library defaults were retained as
+neutral candidates whenever applicable. LightGBM and XGBoost used a maximum of 10,000
+boosting rounds, whereas CatBoost used 1,000 rounds. All three boosting searches used
+early stopping with a patience of 200 rounds. DCN used a maximum of 100 epochs and an
+early-stopping patience of two epochs. The selected configurations were subsequently
+evaluated across the five fixed seeds listed above.
+
+Preliminary backend comparisons were conducted for CatBoost and XGBoost. The GPU
+implementation of CatBoost produced substantially lower validation AUC than its CPU
+counterpart, so only the CPU branch was retained for hyperparameter selection.
+For XGBoost, no meaningful difference in predictive quality was observed between CPU
+and GPU. The GPU implementation was therefore selected for the subsequent
+hyperparameter search.
+Accordingly, only the selected CPU CatBoost and GPU XGBoost grids are reported below.
+LightGBM was tuned and evaluated on CPU only.
+
+### DCN
+
+The initial architecture and training hyperparameters were taken from the
+dataset-specific DCNv2 reference configurations published in the BARS benchmark. All
+parameters not listed below were held fixed at their BARS values. Candidate
+configurations were screened with random seed 2021, using validation AUC as the
+selection criterion. The selected configurations were then evaluated across the five
+fixed seeds.
+
+#### `criteo_x1`
+
+The numeric-feature encoder was varied. The encoder output dimension was fixed at
+10 throughout the reported search. The BARS linear encoder
+(`linear:embedding_dim=10`) served as the reference.
+
+| Numeric encoder | Grid |
+|---|---|
+| PLE | `embedding_dim` = 10, with `n_bins` ∈ {16, 32, 48, 64, 128} × `activation` ∈ {false, true} × `feature_dropout` ∈ {0.0, 0.1} |
+| PLR | `embedding_dim` = 10 and `activation` = `silu`, with `n_freq` ∈ {16, 24, 32, 48, 64} × `sigma` ∈ {0.05, 0.1, 0.2, 0.4, 0.8} |
+
+The PLE and PLR grids were evaluated as full Cartesian products. The selected
+configuration used PLE with `n_bins` = 32, activation enabled, and
+`feature_dropout` = 0.1.
+
+#### `avazu_x1`
+
+The reported search was restricted to multihash configurations in which exactly two
+high-cardinality fields, `feat_10` and `feat_9`, were mapped to a shared hash table. All
+remaining fields retained their BARS settings.
+
+| Parameter block | Grid |
+|---|---|
+| Multihash capacity | `cardinality` ∈ {10000, 30000, 100000, 300000, 1000000} × `n_hashes` ∈ {1, 2, 3}, with `embedding_dim` = 10 and `embedding_regularizer` = 0.05 |
+
+`cardinality` and `n_hashes` were evaluated as a full Cartesian grid. The selected
+multihash configuration used `cardinality` = 10000, `n_hashes` = 2,
+`embedding_dim` = 10, and `embedding_regularizer` = 0.05.
+
+### LightGBM
+
+Parameters listed in the same row were varied jointly. The search was conducted on
+CPU only.
+
+#### `criteo_x1`
+
+| Parameter block | Grid |
+|---|---|
+| Tree capacity | `num_leaves` ∈ {127, 255, 511, 1023, 2047} × `min_child_samples` ∈ {100, 200, 500, 2000, 5000, 10000, 20000} |
+| Row and feature sampling | `colsample_bytree` ∈ {0.5, 0.7, 0.9, 1.0} × `subsample` ∈ {0.6, 0.8, 1.0} |
+| Leaf regularization | `reg_lambda` ∈ {0, 0.1, 1, 5, 10, 50} × `reg_alpha` ∈ {0, 0.1, 1, 10} |
+| Categorical-split regularization | `cat_smooth` ∈ {1, 10, 50, 100} × `cat_l2` ∈ {1, 10, 50} × `max_cat_threshold` ∈ {32, 64, 128} |
+| Histogram resolution | `max_bin` ∈ {63, 127, 255, 511, 1023, 2047} |
+| Final shrinkage search | `learning_rate` ∈ {0.005, 0.01, 0.02, 0.03, 0.05, 0.1} |
+
+#### `avazu_x1`
+
+| Parameter block | Grid |
+|---|---|
+| Tree capacity | `num_leaves` ∈ {63, 127, 255, 511, 1023} × `min_child_samples` ∈ {100, 500, 2000, 5000, 10000, 20000} |
+| Row and feature sampling | `colsample_bytree` ∈ {0.5, 0.7, 0.9, 1.0} × `subsample` ∈ {0.6, 0.8, 1.0} |
+| Leaf regularization | `reg_lambda` ∈ {0, 0.1, 1, 5, 10, 50} × `reg_alpha` ∈ {0, 0.1, 1, 10} |
+| Categorical-split regularization | `cat_smooth` ∈ {1, 10, 50, 100} × `cat_l2` ∈ {1, 10, 50} × `max_cat_threshold` ∈ {32, 64, 128} |
+| Histogram resolution | `max_bin` ∈ {255, 511, 1023, 2047, 4095} |
+| Final shrinkage search | `learning_rate` ∈ {0.005, 0.01, 0.02, 0.03, 0.05, 0.1} |
+
+### CatBoost
+
+Only the selected CPU search is reported. Parameters listed in the same row were
+varied jointly.
+
+#### `criteo_x1`
+
+| Parameter block | CPU grid |
+|---|---|
+| CTR controls and preliminary depth | `max_ctr_complexity` ∈ {1, 2, 4} × `one_hot_max_size` ∈ {2, 4, 10, 25, 100, 255} × `depth` ∈ {6, 8} |
+| Tree capacity | `depth` ∈ {5, 6, 7, 8, 9, 10} × `l2_leaf_reg` ∈ {0.5, 1, 3, 5, 10, 20} |
+| Learning rate | Coarse grid: {0.03, 0.05, 0.1, 0.2, 0.3, 0.41, 0.6}. Final grid: {0.02, 0.07, 0.15, 0.25, 0.3, 0.5} for a coarse winner below 0.25, or {0.1, 0.2, 0.25, 0.35, 0.5, 0.7} otherwise. The coarse winner was also included. |
+| Additional regularization | The carried `l2_leaf_reg` winner together with {4, 7, 15}, crossed with `random_strength` ∈ {0, 1, 10} and `model_size_reg` ∈ {0, 0.5, 2} |
+| Sampling | MVS used `subsample` ∈ {0.6, 0.8, 1.0} × `rsm` ∈ {0.6, 0.8, 1.0} × `mvs_reg` ∈ {0, 1, 10}. Bernoulli (`subsample` = 0.8) and Bayesian (`bagging_temperature` = 1.0) controls were also evaluated. |
+| Numeric-feature bins | `border_count` ∈ {128, 254, 512, 1024}, evaluated jointly with the final learning-rate grid |
+
+#### `avazu_x1`
+
+| Parameter block | CPU grid |
+|---|---|
+| CTR controls and preliminary depth | `max_ctr_complexity` ∈ {1, 2, 4} × `one_hot_max_size` ∈ {2, 4, 10, 25, 100, 255} × `depth` ∈ {6, 8} |
+| Tree capacity | `depth` ∈ {5, 6, 7, 8, 9, 10} × `l2_leaf_reg` ∈ {0.5, 1, 3, 5, 10, 20} |
+| Learning rate | Coarse grid: {0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6}. Final grid: {0.02, 0.07, 0.15, 0.25, 0.3, 0.5} for a coarse winner below 0.25, or {0.1, 0.2, 0.25, 0.35, 0.5, 0.7} otherwise. The coarse winner was also included. |
+| Additional regularization | The carried `l2_leaf_reg` winner together with {4, 7, 15}, crossed with `random_strength` ∈ {0, 1, 10} and `model_size_reg` ∈ {0, 0.5, 2} |
+| Sampling | MVS used `subsample` ∈ {0.6, 0.8, 1.0} × `rsm` ∈ {0.6, 0.8, 1.0} × `mvs_reg` ∈ {0, 1, 10}. Bernoulli (`subsample` = 0.8) and Bayesian (`bagging_temperature` = 1.0) controls were also evaluated. |
+| Numeric-feature bins | Not varied because `avazu_x1` contains no numeric features |
+
+### XGBoost
+
+Only the selected GPU search is reported. Parameters listed in the same row were
+varied jointly.
+
+#### `criteo_x1`
+
+| Parameter block | GPU grid |
+|---|---|
+| Learning rate | Coarse grid: {0.03, 0.05, 0.1, 0.2, 0.3, 0.5}. Final grid: {0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5} |
+| Tree capacity | `max_depth` ∈ {4, 6, 8, 10, 12} × `min_child_weight` ∈ {1, 5, 20, 100, 300, 1000} |
+| Row and feature sampling | `sampling_method` ∈ {`uniform`, `gradient_based`} × `subsample` ∈ {0.3, 0.5, 0.7, 0.9} × `colsample_bytree` ∈ {0.5, 0.7, 0.9, 1.0}. The neutral (`uniform`, 1.0, 1.0) setting was also included. |
+| Leaf and split regularization | `reg_lambda` ∈ {0, 1, 5, 10, 50} × `reg_alpha` ∈ {0, 1, 10} × `gamma` ∈ {0, 1, 5} |
+| Categorical-split controls | `max_cat_to_onehot` ∈ {4, 16, 64, 256} × `max_cat_threshold` ∈ {16, 64, 256}. The library-default setting was also included. |
+| Numeric-feature bins | `max_bin` ∈ {128, 256, 512, 1024} |
+
+#### `avazu_x1`
+
+| Parameter block | GPU grid |
+|---|---|
+| Learning rate | Coarse grid: {0.03, 0.05, 0.1, 0.2, 0.3, 0.5}. Final grid: {0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5} |
+| Tree capacity | `max_depth` ∈ {4, 6, 8, 10, 12} × `min_child_weight` ∈ {1, 5, 20, 100, 300, 1000} |
+| Row and feature sampling | `sampling_method` ∈ {`uniform`, `gradient_based`} × `subsample` ∈ {0.3, 0.5, 0.7, 0.9} × `colsample_bytree` ∈ {0.5, 0.7, 0.9, 1.0}. The neutral (`uniform`, 1.0, 1.0) setting was also included. |
+| Leaf and split regularization | `reg_lambda` ∈ {0, 1, 5, 10, 50} × `reg_alpha` ∈ {0, 1, 10} × `gamma` ∈ {0, 1, 5} |
+| Categorical-split controls | `max_cat_to_onehot` ∈ {4, 16, 64, 256} × `max_cat_threshold` ∈ {16, 64, 256}. The library-default setting was also included. |
+| Numeric-feature bins | Not varied because `avazu_x1` contains no numeric features |
+
 ## Results summary
 
 Mean ± standard deviation over the 5 seeds (`test` split), computed with
