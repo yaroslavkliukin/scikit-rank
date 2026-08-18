@@ -26,6 +26,118 @@ the choice to promote BPR over the stronger BCE validation candidate considered
 the test-period results. It must not be presented as a strictly validation-only
 confirmatory estimate; a fresh held-out temporal period is required for that claim.
 
+## Hyperparameter selection
+
+Hyperparameters were explored independently on Avazu-Time and MIND-small with
+seed `2021`. Candidate DCN configurations were evaluated in two stages. First,
+related parameter families were screened independently around a dataset-specific
+reference configuration. Second, compact Cartesian grids combined the strongest
+architecture, encoder, objective, and regularization candidates. Avazu candidates
+were compared by validation AUC; MIND candidates were compared primarily by
+validation NDCG@10. The test split was disabled for screening and baseline tuning.
+The documented exploratory exception for the reported MIND result is described in
+the protocol section above.
+
+Avazu DCN runs used at most 100 epochs, batch size 4096, and early stopping with a
+patience of three epochs. MIND DCN runs used at most 50 epochs, batch size 4096,
+and a patience of five epochs. The GBDT searches used seed `2021`, a maximum of
+2,500 boosting rounds for LightGBM and XGBoost or 3,000 rounds for CatBoost, and
+early stopping with a patience of 150 rounds.
+
+### Scikit-Rank DCN
+
+#### Avazu-Time
+
+The reference configuration used BCE, a parallel DCNv2 with hidden units
+`[512, 256]`, four cross layers, per-feature categorical embeddings of dimension
+10, ReLU, batch normalization, dropout 0.2, learning rate `1e-3`, no weight
+decay, and embedding regularization 0.05. Avazu-Time contains categorical
+features only, so numerical encoders were not varied.
+
+| Parameter block | Candidates |
+|---|---|
+| Deep tower | `hidden_units` in {[256, 128], [400, 400, 400], [512, 256], [512, 512, 256]} x `structure` in {stacked, parallel} x `dropout` in {0.1, 0.2} |
+| Cross network | `structure` in {stacked, parallel} x `cross_layers` in {2, 3, 4, 5} x `cross_rank` in {full, 64, 128} |
+| Per-feature embeddings | `embedding_dim` in {8, 16, 32} |
+| Unified embedding | `embedding_dim` in {16, 32, 64, 128}, with `embedding_regularizer=1e-4` |
+| Multi-hash | (`cardinality`, `n_hashes`, `embedding_dim`) in {(100000, 2, 16), (100000, 3, 16), (500000, 2, 16), (500000, 2, 32)} for `site_id`, `app_id`, `device_id`, `device_ip`, and `device_model` |
+| Time representation | cyclical hour only, raw hour, day, or raw hour plus day |
+| Optimization/regularization | (`learning_rate`, `weight_decay`, `embedding_regularizer`) in {(3e-4, 0, 0.05), (1e-3, 0, 0), (1e-3, 0, 1e-4), (1e-3, 0, 1e-3), (1e-3, 1e-4, 0.05), (1e-3, 1e-3, 0.05), (3e-3, 0, 0.05)} |
+
+The combination stage crossed `dropout` in {0.1, 0.2}, `cross_rank` in
+{full, 64}, raw-hour inclusion in {false, true}, and categorical encoding in
+{per-feature, unified-128, multi-hash}. Exploratory screens also covered gated
+and masked cross layers, GLU-family activations, and mixture-of-experts towers;
+none replaced the selected standard DCNv2 configuration.
+
+The selected Scikit-Rank configuration uses hidden units `[512, 256]`, a
+parallel structure, four full-rank cross layers, dropout 0.1, per-feature
+10-dimensional embeddings, BCE, batch normalization, learning rate `1e-3`,
+and embedding regularization 0.05.
+
+#### MIND-small
+
+The reference configuration used a stacked DCNv2 with hidden units `[256, 128]`,
+three full-rank cross layers, per-feature embeddings of dimension 32, ReLU,
+dropout 0.1, learning rate `3e-3`, and no weight or embedding regularization.
+
+| Parameter block | Candidates |
+|---|---|
+| Objective | BCE; BPR; margin pairwise; LambdaRank@10/@30; focal LambdaRank@10/@30; LambdaNDCG++@10/@30; listwise; ListMLE; ApproxNDCG (`alpha` 5/20); NeuralNDCG (`temperature` 3/10); BCE+listwise and BCE+LambdaNDCG++ composites (`alpha` 0.3/0.5) |
+| External entity stream | no external stream, or normalized trainable projections with output dimension in {16, 32, 64, 128, 256, 512} and dropout in {0.0, 0.1} |
+| Numerical encoding | identity with standard normalization; linear-16/32 on raw values; PLE-16 with 32 bins; PLE-32 with 64 bins; PLR-16/32 after quantile normalization |
+| Categorical encoding | per-feature or unified embeddings with dimension in {16, 32, 64}; multi-hash capacities in {100000, 200000, 500000} with two hashes and dimension 32 |
+| Architecture | `hidden_units` in {[256, 128], [512, 256]} x `structure` in {stacked, parallel} x `cross_layers` in {2, 3, 4} x `cross_rank` in {full, 64} x batch normalization in {false, true} |
+| Optimization/regularization | learning rate in {3e-4, 1e-3, 3e-3}; weight decay in {0, 1e-4, 1e-3}; embedding regularization in {0, 1e-4, 1e-3}; plateau scheduler on/off, evaluated as a compact set of tuples rather than a full product |
+
+The combination stage crossed four objectives (BCE, listwise, LambdaNDCG++@10,
+and focal LambdaRank@10), external entity projection in {none, 32, 64},
+categorical encoding in {per-feature-32, unified-16}, architecture in
+{stacked/full-rank, parallel/rank-64}, and batch normalization in {false, true}.
+BPR was evaluated separately with entity projection dimensions
+{64, 128, 256, 512} across the same architecture and batch-normalization choices.
+
+The reported exploratory Scikit-Rank configuration uses BPR with all-pairs
+sampling, a normalized 64-dimensional external entity projection, per-feature
+32-dimensional categorical embeddings, hidden units `[256, 128]`, a stacked
+structure with three full-rank cross layers, no batch normalization, dropout
+0.1, learning rate `3e-3`, and no weight or embedding regularization.
+
+### FuxiCTR DCNv2 references
+
+The FuxiCTR reference configurations were fixed comparators rather than another
+hyperparameter search. Both used binary cross-entropy and Adam. Avazu used a
+parallel DCNv2 with hidden units `[400, 400, 400]`, five cross layers,
+10-dimensional embeddings, dropout 0.2, batch normalization, learning rate
+`1e-3`, and embedding regularization 0.05. MIND used a stacked DCNv2 with hidden
+units `[256, 128]`, three cross layers, 32-dimensional embeddings, dropout 0.1,
+no batch normalization, learning rate `3e-3`, and no embedding or network
+regularization. The respective early-stopping patience values were two and five
+epochs.
+
+### Gradient-boosting baselines
+
+Parameters within a row were evaluated as a Cartesian grid. All other parameters
+were kept fixed as shown in the final commands in [`run_final.sh`](run_final.sh).
+Avazu used binary classification objectives. On MIND, LightGBM used LambdaRank,
+XGBoost used `rank:ndcg`, and CatBoost used YetiRank.
+
+| Dataset/model | Parameter block | Grid |
+|---|---|---|
+| Avazu LightGBM | Tree capacity | `num_leaves` in {31, 63, 127} x `min_child_samples` in {50, 200} x `reg_lambda` in {1, 10} |
+| Avazu XGBoost | Tree capacity | `max_depth` in {4, 6, 8} x `min_child_weight` in {1, 10} x `reg_lambda` in {1, 10}; the frequency-encoded branch additionally used depths {4, 6, 8, 10}, followed by an extension to {12, 14, 16} with `reg_lambda=10` |
+| MIND LightGBM | Tree capacity | `num_leaves` in {15, 31, 63} x `min_child_samples` in {50, 200} x `reg_lambda` in {1, 10} |
+| MIND XGBoost | Tree capacity | `max_depth` in {3, 4, 6} x `min_child_weight` in {5, 20} x `reg_lambda` in {5, 20} |
+| Both CatBoost | Tree capacity | `depth` in {3, 4, 6} x `learning_rate` in {0.01, 0.03} x `l2_leaf_reg` in {10, 30}; MIND used YetiRank |
+
+The selected Avazu configurations were LightGBM with 127 leaves,
+`min_child_samples=200`, and `reg_lambda=1`; frequency-encoded XGBoost with
+depth 10, `min_child_weight=10`, and `reg_lambda=10`; and CatBoost with depth 6,
+learning rate 0.03, and `l2_leaf_reg=10`. The selected MIND configurations were
+LightGBM with 63 leaves, `min_child_samples=200`, and `reg_lambda=1`; XGBoost
+with depth 6, `min_child_weight=20`, and `reg_lambda=5`; and CatBoost with depth
+3, learning rate 0.03, `l2_leaf_reg=10`, and YetiRank.
+
 ## Data preparation
 
 Avazu:
